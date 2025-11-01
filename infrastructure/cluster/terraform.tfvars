@@ -1,6 +1,3 @@
-# Example terraform.tfvars file
-# Copy this to terraform.tfvars and update with your values
-
 project_id   = "transaction-api-2446"
 region       = "europe-west1"
 zones        = ["europe-west1-b", "europe-west1-c", "europe-west1-d"]
