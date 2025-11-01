@@ -1,0 +1,41 @@
+image:
+  repository: postgres
+  tag: "15"
+  pullPolicy: IfNotPresent
+
+# PostgreSQL configuration
+postgresql:
+  username: root
+  password: changeme
+  database: transactions
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 5432
+
+
+# Persistence configuration
+persistence:
+  enabled: true
+  storageClass: ""  # Empty means use default storage class
+  accessMode: ReadWriteOnce
+  size: 8Gi
+  mountPath: /var/lib/postgresql/data
+
+# Resource limits
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Pod configuration
+replicaCount: 1
+
+# Node selector
+nodeSelector:
+  kubernetes.io/os: linux
+  node.kubernetes.io/instance-type: e2-small
