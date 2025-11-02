@@ -1,0 +1,597 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": "Prometheus",
+        "enable": true,
+        "expr": "changes(kube_deployment_status_observed_generation{deployment=\"transaction-api\"}[5m]) > 0",
+        "iconColor": "rgba(255, 96, 96, 1)",
+        "name": "Deployments",
+        "tagKeys": "deployment",
+        "titleFormat": "Deployment"
+      }
+    ]
+  },
+  "title": "Transaction API - Overview",
+  "description": "High-level overview of Transaction API health, performance, and SLO compliance",
+  "uid": "transaction-api-overview",
+  "tags": ["transaction-api", "slo", "overview"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Service Health Overview",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "collapsed": false
+    },
+    {
+      "type": "stat",
+      "title": "Service Status",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 4, "w": 3, "x": 0, "y": 1},
+      "id": 10,
+      "targets": [
+        {
+          "expr": "up{job=\"transaction-api\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "text": {},
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN", "color": "red"},
+            {"type": "value", "value": "1", "text": "UP", "color": "green"}
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "red"},
+              {"value": 1, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Request Rate",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 4, "w": 3, "x": 3, "y": 1},
+      "id": 11,
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{app=\"transaction-api\"}[5m]))",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "text": {},
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Error Rate",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 4, "w": 3, "x": 6, "y": 1},
+      "id": 12,
+      "targets": [
+        {
+          "expr": "(sum(rate(http_requests_total{app=\"transaction-api\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{app=\"transaction-api\"}[5m]))) * 100",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "text": {},
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 3,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 0.5, "color": "yellow"},
+              {"value": 1, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "P95 Latency",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 4, "w": 3, "x": 9, "y": 1},
+      "id": 13,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{app=\"transaction-api\"}[5m])) by (le))",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "text": {},
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 3,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 0.15, "color": "yellow"},
+              {"value": 0.2, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Transaction Success Rate",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 4, "w": 3, "x": 12, "y": 1},
+      "id": 14,
+      "targets": [
+        {
+          "expr": "(sum(rate(transactions_total{app=\"transaction-api\",status=\"success\"}[5m])) / sum(rate(transactions_total{app=\"transaction-api\"}[5m]))) * 100",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "text": {},
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "red"},
+              {"value": 99.8, "color": "yellow"},
+              {"value": 99.9, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Active Pods",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 4, "w": 3, "x": 15, "y": 1},
+      "id": 15,
+      "targets": [
+        {
+          "expr": "kube_deployment_status_replicas_available{deployment=\"transaction-api\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "text": {},
+        "textMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "red"},
+              {"value": 2, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "DB Connection Pool Usage",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 4, "w": 3, "x": 18, "y": 1},
+      "id": 16,
+      "targets": [
+        {
+          "expr": "(db_connections_active{app=\"transaction-api\"} / db_connections_max{app=\"transaction-api\"}) * 100",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "text": {},
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 70, "color": "yellow"},
+              {"value": 90, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Avg CPU Usage",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 4, "w": 3, "x": 21, "y": 1},
+      "id": 17,
+      "targets": [
+        {
+          "expr": "avg(rate(container_cpu_usage_seconds_total{namespace=\"default\",pod=~\"transaction-api-.*\"}[5m])) * 100",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "text": {},
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 70, "color": "yellow"},
+              {"value": 85, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Request Metrics",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
+      "id": 2,
+      "collapsed": false
+    },
+    {
+      "type": "graph",
+      "title": "Request Rate (QPS)",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+      "id": 20,
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{app=\"transaction-api\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "Total Requests"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{app=\"transaction-api\",status=~\"2..\"}[5m]))",
+          "refId": "B",
+          "legendFormat": "2xx Successful"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{app=\"transaction-api\",status=~\"4..\"}[5m]))",
+          "refId": "C",
+          "legendFormat": "4xx Client Errors"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{app=\"transaction-api\",status=~\"5..\"}[5m]))",
+          "refId": "D",
+          "legendFormat": "5xx Server Errors"
+        }
+      ],
+      "yaxes": [
+        {"format": "reqps", "label": "Requests/sec"},
+        {"format": "short"}
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Request Latency",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+      "id": 21,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{app=\"transaction-api\"}[5m])) by (le))",
+          "refId": "A",
+          "legendFormat": "P50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{app=\"transaction-api\"}[5m])) by (le))",
+          "refId": "B",
+          "legendFormat": "P95 (SLO: 200ms)"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{app=\"transaction-api\"}[5m])) by (le))",
+          "refId": "C",
+          "legendFormat": "P99 (SLO: 500ms)"
+        }
+      ],
+      "yaxes": [
+        {"format": "s", "label": "Latency"},
+        {"format": "short"}
+      ],
+      "alert": {
+        "conditions": [
+          {
+            "evaluator": {"params": [0.2], "type": "gt"},
+            "operator": {"type": "and"},
+            "query": {"params": ["B", "5m", "now"]},
+            "reducer": {"params": [], "type": "avg"},
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "frequency": "1m",
+        "handler": 1,
+        "name": "P95 Latency Alert",
+        "noDataState": "no_data"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Transaction Metrics",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 14},
+      "id": 3,
+      "collapsed": false
+    },
+    {
+      "type": "graph",
+      "title": "Transaction Throughput",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 15},
+      "id": 30,
+      "targets": [
+        {
+          "expr": "sum(rate(transactions_total{app=\"transaction-api\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "Total Transactions"
+        },
+        {
+          "expr": "sum(rate(transactions_total{app=\"transaction-api\",status=\"success\"}[5m]))",
+          "refId": "B",
+          "legendFormat": "Successful"
+        },
+        {
+          "expr": "sum(rate(transactions_total{app=\"transaction-api\",status=\"failed\"}[5m]))",
+          "refId": "C",
+          "legendFormat": "Failed"
+        }
+      ],
+      "yaxes": [
+        {"format": "tps", "label": "Transactions/sec"},
+        {"format": "short"}
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Transaction Processing Duration",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 15},
+      "id": 31,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(transaction_processing_duration_seconds_bucket{app=\"transaction-api\"}[5m])) by (le))",
+          "refId": "A",
+          "legendFormat": "P50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(transaction_processing_duration_seconds_bucket{app=\"transaction-api\"}[5m])) by (le))",
+          "refId": "B",
+          "legendFormat": "P95 (SLO: 2s)"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(transaction_processing_duration_seconds_bucket{app=\"transaction-api\"}[5m])) by (le))",
+          "refId": "C",
+          "legendFormat": "P99 (SLO: 5s)"
+        }
+      ],
+      "yaxes": [
+        {"format": "s", "label": "Duration"},
+        {"format": "short"}
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Database Metrics",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 23},
+      "id": 4,
+      "collapsed": false
+    },
+    {
+      "type": "graph",
+      "title": "Database Query Rate",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 24},
+      "id": 40,
+      "targets": [
+        {
+          "expr": "sum(rate(db_queries_total{app=\"transaction-api\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "Total Queries"
+        },
+        {
+          "expr": "sum(rate(db_query_errors_total{app=\"transaction-api\"}[5m]))",
+          "refId": "B",
+          "legendFormat": "Query Errors"
+        }
+      ],
+      "yaxes": [
+        {"format": "qps", "label": "Queries/sec"},
+        {"format": "short"}
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Database Query Latency",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 24},
+      "id": 41,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(db_query_duration_seconds_bucket{app=\"transaction-api\"}[5m])) by (le))",
+          "refId": "A",
+          "legendFormat": "P95 Query Duration"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(db_query_duration_seconds_bucket{app=\"transaction-api\"}[5m])) by (le))",
+          "refId": "B",
+          "legendFormat": "P99 Query Duration"
+        }
+      ],
+      "yaxes": [
+        {"format": "s", "label": "Duration"},
+        {"format": "short"}
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Database Connection Pool",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 24},
+      "id": 42,
+      "targets": [
+        {
+          "expr": "db_connections_active{app=\"transaction-api\"}",
+          "refId": "A",
+          "legendFormat": "Active Connections"
+        },
+        {
+          "expr": "db_connections_idle{app=\"transaction-api\"}",
+          "refId": "B",
+          "legendFormat": "Idle Connections"
+        },
+        {
+          "expr": "db_connections_max{app=\"transaction-api\"}",
+          "refId": "C",
+          "legendFormat": "Max Connections"
+        }
+      ],
+      "yaxes": [
+        {"format": "short", "label": "Connections"},
+        {"format": "short"}
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Resource Usage",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 32},
+      "id": 5,
+      "collapsed": false
+    },
+    {
+      "type": "graph",
+      "title": "CPU Usage",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 33},
+      "id": 50,
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"default\",pod=~\"transaction-api-.*\"}[5m])) by (pod) * 100",
+          "refId": "A",
+          "legendFormat": "{{ pod }}"
+        }
+      ],
+      "yaxes": [
+        {"format": "percent", "label": "CPU %", "max": 100},
+        {"format": "short"}
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Memory Usage",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 33},
+      "id": 51,
+      "targets": [
+        {
+          "expr": "container_memory_working_set_bytes{namespace=\"default\",pod=~\"transaction-api-.*\"}",
+          "refId": "A",
+          "legendFormat": "{{ pod }}"
+        }
+      ],
+      "yaxes": [
+        {"format": "bytes", "label": "Memory"},
+        {"format": "short"}
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 27,
+  "version": 1
+}

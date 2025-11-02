@@ -1,0 +1,278 @@
+# Global settings
+fullnameOverride: "prometheus"
+
+# Prometheus Operator configuration
+prometheusOperator:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  
+  nodeSelector:
+    kubernetes.io/os: linux
+    node.kubernetes.io/instance-type: e2-medium
+
+# Prometheus server configuration
+prometheus:
+  enabled: true
+  
+  prometheusSpec:
+    # Resource allocation
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+    
+    # Retention and storage
+    retention: 15d
+    retentionSize: "45GB"
+    
+    # Storage configuration
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+    
+    # Service monitor selection
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    
+    # Scrape configuration
+    scrapeInterval: 15s
+    scrapeTimeout: 10s
+    evaluationInterval: 15s
+    
+    # Enable admin API for management operations
+    enableAdminAPI: true
+    
+    # Additional scrape configs for custom endpoints
+    additionalScrapeConfigs: []
+    
+    # External labels for federation/remote write
+    externalLabels:
+      cluster: "transaction-api-cluster"
+      environment: "assesment"
+    
+    # Rule namespace selector
+    ruleNamespaceSelector: {}
+    ruleSelector: {}
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 9090
+  
+  nodeSelector:
+    kubernetes.io/os: linux
+    node.kubernetes.io/instance-type: e2-medium
+
+# AlertManager configuration
+alertmanager:
+  enabled: true
+
+  nodeSelector:
+    kubernetes.io/os: linux
+    node.kubernetes.io/instance-type: e2-medium
+  
+  alertmanagerSpec:
+    # Resource allocation
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    
+    # Storage
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+    
+    # Retention
+    retention: 120h
+  
+  # AlertManager configuration
+  config:
+    global:
+      resolve_timeout: 5m
+    
+    route:
+      group_by: ['alertname', 'cluster', 'service', 'severity']
+      group_wait: 10s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: 'default'
+    
+    receivers:
+      - name: 'default'
+        slack_configs:
+          - channel: '#alerts-default'
+            title: 'Alert: {{ .GroupLabels.alertname }}'
+            text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+      
+# Grafana configuration
+grafana:
+  enabled: true
+
+  sidecar:
+    datasources:
+      enabled: true
+      defaultDatasourceEnabled: true
+  
+  # Admin credentials
+  adminUser: admin
+  adminPassword: "" # Set via Terraform variable
+  
+  # Resource allocation
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  nodeSelector:
+    kubernetes.io/os: linux
+    node.kubernetes.io/instance-type: e2-medium
+  
+  # Persistence
+  persistence:
+    enabled: true
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+  
+  # Dashboard providers
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+        - name: 'transaction-api'
+          orgId: 1
+          folder: 'Transaction API'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/transaction-api
+  
+  # Dashboard ConfigMaps
+  dashboardsConfigMaps:
+    transaction-api: "grafana-dashboard-transaction-api"
+    slo: "grafana-dashboard-slo"
+  
+  # Grafana ini configuration
+  grafana.ini:
+    server:
+      root_url: "http://grafana.yourdomain.com"
+    analytics:
+      check_for_updates: false
+      reporting_enabled: false
+    security:
+      admin_user: admin
+      cookie_secure: false
+      cookie_samesite: lax
+    auth.anonymous:
+      enabled: false
+    users:
+      auto_assign_org_role: Viewer
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+
+# Node Exporter - for host metrics
+nodeExporter:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 30Mi
+    limits:
+      cpu: 200m
+      memory: 50Mi
+
+# Kube State Metrics - for Kubernetes object metrics
+kubeStateMetrics:
+  enabled: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+# Default rules (pre-configured alerts)
+defaultRules:
+  create: true
+  rules:
+    alertmanager: true
+    etcd: false # Set to true if monitoring etcd
+    configReloaders: true
+    general: true
+    k8s: true
+    kubeApiserver: true
+    kubeApiserverAvailability: true
+    kubeApiserverSlos: true
+    kubelet: true
+    kubeProxy: true
+    kubePrometheusGeneral: true
+    kubePrometheusNodeRecording: true
+    kubernetesApps: true
+    kubernetesResources: true
+    kubernetesStorage: true
+    kubernetesSystem: true
+    kubeScheduler: true
+    kubeStateMetrics: true
+    network: true
+    node: true
+    nodeExporterAlerting: true
+    nodeExporterRecording: true
+    prometheus: true
+    prometheusOperator: true
+
+# Additional components
+coreDns:
+  enabled: true
+
+kubeDns:
+  enabled: true
+
+kubeControllerManager:
+  enabled: true
+
+kubeScheduler:
+  enabled: true
+
+kubeProxy:
+  enabled: true
+
+kubeEtcd:
+  enabled: false # Set to true if you have access to etcd metrics
