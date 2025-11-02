@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    kubectl = {
+      source  = "gavinbunney/kubectl"
+      version = ">= 1.14.0"
+    }
+  }
+}
+
 # Get cluster info from remote state
 data "terraform_remote_state" "cluster" {
   backend = "gcs"
@@ -6,6 +15,7 @@ data "terraform_remote_state" "cluster" {
     prefix = "infrastructure/cluster/terraform.tfstate"
   }
 }
+
 
 # Get GCP access token
 data "google_client_config" "default" {}
@@ -32,6 +42,15 @@ provider "kubernetes" {
   )
 }
 
+# Kubectl provider using GKE cluster
+provider "kubectl" {
+  host                   = "https://${data.google_container_cluster.primary.endpoint}"
+  token                  = data.google_client_config.default.access_token
+  cluster_ca_certificate = base64decode(data.google_container_cluster.primary.master_auth[0].cluster_ca_certificate)
+  load_config_file       = false
+}
+
+
 # Configure Helm provider
 provider "helm" {
   kubernetes {
@@ -45,43 +64,11 @@ provider "helm" {
   }
 }
 
-module "postgresql" {
-  source = "../../modules/postgresql"
+module "monitoring" {
+  source = "../../modules/prometheus"
 
-  db_name    = "postgresql"
-  chart_name = "postgresql"
-  namespace  = "transactions"
-
-  custom_values = {
-    postgresql = {
-      # Set the username and password via TF_VAR_db_username and TF_VAR_db_password during runtime
-      username = var.db_username
-      password = var.db_password
-      database = "transactions"
-    }
-  }
-}
-
-module "transaction-api" {
-  source = "../../modules/transaction-api"
-
-  app_name   = "transaction-api"
-  chart_name = "transaction-api"
-  namespace  = "transactions"
-  timeout    = 120
-
-  depends_on = [module.postgresql]
-
-
-  custom_values = {
-    env = [
-      {
-        name = "DATABASE_URL"
-        secretRef = {
-          name = module.postgresql.secret_name
-          key  = "postgres-url"
-        }
-      }
-    ]
-  }
+  # Set the password via TF_VAR_grafana_admin_password during runtime
+  environment            = var.environment
+  grafana_admin_password = var.grafana_admin_password
+  app_namespace          = "transactions"
 }

@@ -67,3 +67,45 @@ variable "labels" {
   type        = map(string)
   default     = {}
 }
+
+variable "monitoring_machine_type" {
+  description = "Machine type for nodes"
+  type        = string
+  default     = "e2-small"
+}
+
+variable "monitoring_node_count" {
+  description = "Number of nodes per zone"
+  type        = number
+  default     = 2
+}
+
+variable "monitoring_min_node_count" {
+  description = "Minimum number of nodes for autoscaling"
+  type        = number
+  default     = 1
+}
+
+variable "monitoring_max_node_count" {
+  description = "Maximum number of nodes for autoscaling"
+  type        = number
+  default     = 3
+}
+
+variable "monitoring_use_preemptible" {
+  description = "Use preemptible nodes (cheaper but can be terminated)"
+  type        = bool
+  default     = true
+}
+
+variable "monitoring_disk_size_gb" {
+  description = "Disk size in GB"
+  type        = number
+  default     = 50
+}
+
+variable "monitoring_labels" {
+  description = "Labels for resources"
+  type        = map(string)
+  default     = {}
+}

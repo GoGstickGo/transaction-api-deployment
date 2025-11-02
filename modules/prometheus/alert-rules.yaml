@@ -1,0 +1,354 @@
+# prometheus/alert-rules.yaml
+# PrometheusRule for Transaction API monitoring
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: transaction-api-alerts
+  namespace: monitoring
+  labels:
+    app: transaction-api
+    prometheus: kube-prometheus
+spec:
+  groups:
+    # ============================================
+    # CRITICAL ALERTS - Immediate Page Required
+    # ============================================
+    - name: transaction-api-critical
+      interval: 30s
+      rules:
+        # API Availability - SLO breach
+        - alert: TransactionAPIHighErrorRate
+          expr: |
+            (
+              sum(rate(http_requests_total{app="transaction-api",status=~"5.."}[5m]))
+              /
+              sum(rate(http_requests_total{app="transaction-api"}[5m]))
+            ) > 0.01
+          for: 5m
+          labels:
+            severity: critical
+            component: api
+            slo: availability
+          annotations:
+            summary: "Transaction API error rate exceeds 1%"
+            description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes. SLO threshold is 1%."
+            runbook_url: "https://runbooks.company.com/transaction-api/high-error-rate"
+            dashboard_url: "https://grafana.company.com/d/transaction-api-overview"
+
+        # Complete service down
+        - alert: TransactionAPIDown
+          expr: |
+            up{job="transaction-api"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            component: api
+          annotations:
+            summary: "Transaction API is down"
+            description: "Transaction API instance {{ $labels.instance }} has been down for more than 2 minutes."
+            runbook_url: "https://runbooks.company.com/transaction-api/service-down"
+
+        # High latency - P95 exceeding SLO
+        - alert: TransactionAPIHighLatency
+          expr: |
+            histogram_quantile(0.95,
+              rate(http_request_duration_seconds_bucket{app="transaction-api"}[5m])
+            ) > 0.2
+          for: 10m
+          labels:
+            severity: critical
+            component: api
+            slo: latency
+          annotations:
+            summary: "Transaction API P95 latency exceeds 200ms"
+            description: "P95 latency is {{ $value | humanizeDuration }} for the last 10 minutes. SLO threshold is 200ms."
+            runbook_url: "https://runbooks.company.com/transaction-api/high-latency"
+
+        # Transaction processing failure rate
+        - alert: TransactionProcessingFailureHigh
+          expr: |
+            (
+              sum(rate(transactions_total{app="transaction-api",status="failed"}[5m]))
+              /
+              sum(rate(transactions_total{app="transaction-api"}[5m]))
+            ) > 0.005
+          for: 5m
+          labels:
+            severity: critical
+            component: transactions
+            slo: transaction_success_rate
+          annotations:
+            summary: "Transaction failure rate exceeds 0.5%"
+            description: "Transaction failure rate is {{ $value | humanizePercentage }} for the last 5 minutes. SLO threshold is 0.1%."
+            runbook_url: "https://runbooks.company.com/transaction-api/transaction-failures"
+
+        # Database connectivity issues
+        - alert: DatabaseConnectionFailures
+          expr: |
+            (
+              sum(rate(db_query_errors_total{app="transaction-api"}[5m]))
+              /
+              sum(rate(db_queries_total{app="transaction-api"}[5m]))
+            ) > 0.001
+          for: 5m
+          labels:
+            severity: critical
+            component: database
+          annotations:
+            summary: "Database connection error rate exceeds 0.1%"
+            description: "Database error rate is {{ $value | humanizePercentage }} for the last 5 minutes."
+            runbook_url: "https://runbooks.company.com/transaction-api/database-errors"
+
+        # Transaction processing completely stalled
+        - alert: TransactionProcessingStalled
+          expr: |
+            rate(transactions_total{app="transaction-api"}[5m]) == 0
+            and
+            rate(http_requests_total{app="transaction-api"}[5m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            component: transactions
+          annotations:
+            summary: "Transaction processing has stalled"
+            description: "No transactions are being processed despite receiving API requests."
+            runbook_url: "https://runbooks.company.com/transaction-api/processing-stalled"
+
+        # Database connection pool exhausted
+        - alert: DatabaseConnectionPoolExhausted
+          expr: |
+            (
+              db_connections_active{app="transaction-api"}
+              /
+              db_connections_max{app="transaction-api"}
+            ) > 0.95
+          for: 5m
+          labels:
+            severity: critical
+            component: database
+          annotations:
+            summary: "Database connection pool is exhausted"
+            description: "Database connection pool utilization is {{ $value | humanizePercentage }}. This will cause request failures."
+            runbook_url: "https://runbooks.company.com/transaction-api/connection-pool-exhausted"
+
+        # Pod crash looping
+        - alert: TransactionAPIPodCrashLooping
+          expr: |
+            rate(kube_pod_container_status_restarts_total{namespace="default",pod=~"transaction-api-.*"}[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            component: kubernetes
+          annotations:
+            summary: "Transaction API pod is crash looping"
+            description: "Pod {{ $labels.pod }} is restarting frequently. Check logs immediately."
+            runbook_url: "https://runbooks.company.com/transaction-api/pod-crash-loop"
+
+        # Memory usage critical
+        - alert: TransactionAPIMemoryCritical
+          expr: |
+            (
+              container_memory_working_set_bytes{namespace="default",pod=~"transaction-api-.*"}
+              /
+              container_spec_memory_limit_bytes{namespace="default",pod=~"transaction-api-.*"}
+            ) > 0.95
+          for: 5m
+          labels:
+            severity: critical
+            component: resources
+          annotations:
+            summary: "Transaction API memory usage critical"
+            description: "Memory usage is {{ $value | humanizePercentage }} for pod {{ $labels.pod }}. OOMKill imminent."
+            runbook_url: "https://runbooks.company.com/transaction-api/memory-critical"
+
+    # ============================================
+    # WARNING ALERTS - Team Notification
+    # ============================================
+    - name: transaction-api-warning
+      interval: 60s
+      rules:
+        # Error rate elevated but not critical
+        - alert: TransactionAPIErrorRateElevated
+          expr: |
+            (
+              sum(rate(http_requests_total{app="transaction-api",status=~"5.."}[10m]))
+              /
+              sum(rate(http_requests_total{app="transaction-api"}[10m]))
+            ) > 0.005
+          for: 10m
+          labels:
+            severity: warning
+            component: api
+          annotations:
+            summary: "Transaction API error rate is elevated"
+            description: "Error rate is {{ $value | humanizePercentage }} for the last 10 minutes. Threshold is 0.5%."
+            runbook_url: "https://runbooks.company.com/transaction-api/elevated-errors"
+
+        # P99 latency warning
+        - alert: TransactionAPILatencyP99High
+          expr: |
+            histogram_quantile(0.99,
+              rate(http_request_duration_seconds_bucket{app="transaction-api"}[10m])
+            ) > 0.5
+          for: 15m
+          labels:
+            severity: warning
+            component: api
+            slo: latency
+          annotations:
+            summary: "Transaction API P99 latency exceeds 500ms"
+            description: "P99 latency is {{ $value | humanizeDuration }} for the last 15 minutes. SLO threshold is 500ms."
+            runbook_url: "https://runbooks.company.com/transaction-api/high-latency"
+
+        # Transaction queue building up
+        - alert: TransactionQueueDepthHigh
+          expr: |
+            transaction_queue_depth{app="transaction-api"} > 100
+          for: 10m
+          labels:
+            severity: warning
+            component: transactions
+          annotations:
+            summary: "Transaction queue depth is high"
+            description: "Transaction queue has {{ $value }} pending items. May indicate processing slowdown."
+            runbook_url: "https://runbooks.company.com/transaction-api/queue-depth"
+
+        # Database query latency warning
+        - alert: DatabaseQueryLatencyHigh
+          expr: |
+            histogram_quantile(0.95,
+              rate(db_query_duration_seconds_bucket{app="transaction-api"}[5m])
+            ) > 0.1
+          for: 10m
+          labels:
+            severity: warning
+            component: database
+          annotations:
+            summary: "Database query latency is high"
+            description: "P95 database query latency is {{ $value | humanizeDuration }}. This may affect API response times."
+            runbook_url: "https://runbooks.company.com/transaction-api/slow-queries"
+
+        # Connection pool utilization high
+        - alert: DatabaseConnectionPoolUtilizationHigh
+          expr: |
+            (
+              db_connections_active{app="transaction-api"}
+              /
+              db_connections_max{app="transaction-api"}
+            ) > 0.80
+          for: 15m
+          labels:
+            severity: warning
+            component: database
+          annotations:
+            summary: "Database connection pool utilization is high"
+            description: "Connection pool utilization is {{ $value | humanizePercentage }}. Consider scaling or optimizing queries."
+            runbook_url: "https://runbooks.company.com/transaction-api/connection-pool-high"
+
+        # CPU usage high
+        - alert: TransactionAPICPUHigh
+          expr: |
+            (
+              rate(container_cpu_usage_seconds_total{namespace="default",pod=~"transaction-api-.*"}[5m])
+              /
+              container_spec_cpu_quota{namespace="default",pod=~"transaction-api-.*"}
+              * 100000
+            ) > 80
+          for: 15m
+          labels:
+            severity: warning
+            component: resources
+          annotations:
+            summary: "Transaction API CPU usage is high"
+            description: "CPU usage is {{ $value }}% for pod {{ $labels.pod }}. Consider scaling."
+            runbook_url: "https://runbooks.company.com/transaction-api/high-cpu"
+
+        # Memory usage high
+        - alert: TransactionAPIMemoryHigh
+          expr: |
+            (
+              container_memory_working_set_bytes{namespace="default",pod=~"transaction-api-.*"}
+              /
+              container_spec_memory_limit_bytes{namespace="default",pod=~"transaction-api-.*"}
+            ) > 0.80
+          for: 15m
+          labels:
+            severity: warning
+            component: resources
+          annotations:
+            summary: "Transaction API memory usage is high"
+            description: "Memory usage is {{ $value | humanizePercentage }} for pod {{ $labels.pod }}."
+            runbook_url: "https://runbooks.company.com/transaction-api/high-memory"
+
+        # Replica count low
+        - alert: TransactionAPIReplicaCountLow
+          expr: |
+            kube_deployment_status_replicas_available{deployment="transaction-api"} < 2
+          for: 10m
+          labels:
+            severity: warning
+            component: kubernetes
+          annotations:
+            summary: "Transaction API replica count is low"
+            description: "Only {{ $value }} replicas are available. This reduces redundancy."
+            runbook_url: "https://runbooks.company.com/transaction-api/low-replicas"
+
+        # Transaction failure rate elevated
+        - alert: TransactionFailureRateElevated
+          expr: |
+            (
+              sum(rate(transactions_total{app="transaction-api",status="failed"}[10m]))
+              /
+              sum(rate(transactions_total{app="transaction-api"}[10m]))
+            ) > 0.002
+          for: 10m
+          labels:
+            severity: warning
+            component: transactions
+          annotations:
+            summary: "Transaction failure rate is elevated"
+            description: "Transaction failure rate is {{ $value | humanizePercentage }}. Monitor for increase."
+            runbook_url: "https://runbooks.company.com/transaction-api/transaction-failures"
+
+    # ============================================
+    # INFO ALERTS - Informational Only
+    # ============================================
+    - name: transaction-api-info
+      interval: 300s
+      rules:
+        # Deployment event
+        - alert: TransactionAPIDeployed
+          expr: |
+            changes(kube_deployment_status_observed_generation{deployment="transaction-api"}[5m]) > 0
+          for: 1m
+          labels:
+            severity: info
+            component: kubernetes
+          annotations:
+            summary: "Transaction API deployment detected"
+            description: "A new deployment of Transaction API has been detected."
+
+        # Scaling event
+        - alert: TransactionAPIScaled
+          expr: |
+            changes(kube_deployment_spec_replicas{deployment="transaction-api"}[5m]) > 0
+          for: 1m
+          labels:
+            severity: info
+            component: kubernetes
+          annotations:
+            summary: "Transaction API replica count changed"
+            description: "Transaction API has been scaled to {{ $value }} replicas."
+
+        # High request volume (may need capacity planning)
+        - alert: TransactionAPIHighRequestVolume
+          expr: |
+            sum(rate(http_requests_total{app="transaction-api"}[5m])) > 1000
+          for: 30m
+          labels:
+            severity: info
+            component: api
+          annotations:
+            summary: "Transaction API experiencing high request volume"
+            description: "Request rate is {{ $value }} req/s. Consider capacity planning."

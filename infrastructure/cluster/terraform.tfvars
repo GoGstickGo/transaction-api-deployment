@@ -17,3 +17,14 @@ labels = {
   environment = "assesment"
   purpose     = "challenge"
 }
+
+monitoring_machine_type    = "e2-medium"
+monitoring_use_preemptible = true
+monitoring_node_count      = 1
+monitoring_min_node_count  = 1
+monitoring_max_node_count  = 3
+monitoring_disk_size_gb    = 50
+monitoring_labels = {
+  "purpose"   = "monitoring"
+  environment = "assesment"
+}

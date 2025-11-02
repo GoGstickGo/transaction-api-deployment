@@ -74,3 +74,46 @@ resource "google_container_node_pool" "primary_nodes" {
     max_node_count = var.max_node_count
   }
 }
+
+
+resource "google_container_node_pool" "monitoring_nodes" {
+  name       = "${var.cluster_name}-mon-node-pool"
+  location   = var.region
+  cluster    = google_container_cluster.primary.name
+  node_count = var.monitoring_node_count
+
+  node_config {
+    preemptible  = var.monitoring_use_preemptible
+    machine_type = var.monitoring_machine_type
+    disk_size_gb = var.monitoring_disk_size_gb
+
+
+    # OAuth scopes for GCP services
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+
+    # Workload identity
+    workload_metadata_config {
+      mode = "GKE_METADATA"
+    }
+
+    labels = var.labels
+
+    tags = ["gke-node", "${var.cluster_name}-monitoring-node"]
+
+    metadata = {
+      disable-legacy-endpoints = "true"
+    }
+  }
+
+  management {
+    auto_repair  = true
+    auto_upgrade = true
+  }
+
+  autoscaling {
+    min_node_count = var.monitoring_min_node_count
+    max_node_count = var.monitoring_max_node_count
+  }
+}

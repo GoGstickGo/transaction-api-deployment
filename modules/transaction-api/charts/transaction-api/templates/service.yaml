@@ -5,6 +5,8 @@ metadata:
   name: {{ .Release.Name }}
   labels:
     {{- include "transaction-api.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.service.annotations | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
