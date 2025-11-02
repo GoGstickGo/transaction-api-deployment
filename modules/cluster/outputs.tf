@@ -24,3 +24,13 @@ output "kubernetes_version" {
   description = "Kubernetes version"
   value       = google_container_cluster.primary.master_version
 }
+
+output "cluster_location" {
+  description = "GKE cluster location"
+  value       = google_container_cluster.primary.location
+}
+
+output "project_id" {
+  description = "GCP project ID"
+  value       = var.project_id
+}

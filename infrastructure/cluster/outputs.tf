@@ -17,10 +17,19 @@ output "cluster_ca_certificate" {
 
 output "region" {
   description = "GCP region"
-  value       = var.region
+  value       = module.cluster.region
 }
 
 output "kubernetes_version" {
   description = "Kubernetes version"
   value       = module.cluster.kubernetes_version
+}
+
+output "project_id" {
+  value = module.cluster.project_id
+}
+
+output "cluster_location" {
+  description = "GKE cluster location"
+  value       = module.cluster.cluster_location
 }
