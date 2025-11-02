@@ -122,7 +122,7 @@ resource "kubectl_manifest" "transaction_api_service_monitor" {
         matchNames:
           - ${var.app_namespace}
       endpoints:
-        - port: metrics
+        - port: http
           path: /metrics
           interval: 15s
           scrapeTimeout: 10s
