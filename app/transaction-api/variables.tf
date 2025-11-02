@@ -1,5 +1,5 @@
 variable "db_password" {
-  type = string
+  type      = string
   sensitive = true
 }
 
@@ -8,6 +8,6 @@ variable "db_username" {
 }
 
 variable "state_bucket" {
-  type = string
+  type    = string
   default = "sre-assesment-state"
 }

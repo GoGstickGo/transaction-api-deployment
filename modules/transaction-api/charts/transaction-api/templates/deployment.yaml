@@ -5,11 +5,11 @@ metadata:
   name: {{ include "transaction-api.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-  {{- include "transaction-api.labels" . | nindent 4 }}
+    {{- include "transaction-api.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
-   {{- end }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "transaction-api.selectorLabels" . | nindent 6 }}
@@ -31,17 +31,23 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          
+          {{- if .Values.volumeMounts }}
           volumeMounts:
-            - name: {{ .Values.volumeName }}
-              mountPath: {{ .Values.volumeMountPath }}
+            {{- toYaml .Values.volumeMounts | nindent 12 }}
+          {{- end }}
+          
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+          
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
+          
+          {{- if .Values.env }}
           env:
           {{- range .Values.env }}
           {{- if .secretRef }}
@@ -55,8 +61,16 @@ spec:
             value: {{ .value | quote }}
           {{- end }}
           {{- end }}
+          {{- end }}
+          
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      
+      {{- if .Values.volumes }}
+      volumes:
+        {{- toYaml .Values.volumes | nindent 8 }}
+      {{- end }}
+      
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

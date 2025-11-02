@@ -40,15 +40,15 @@ provider "helm" {
     cluster_ca_certificate = base64decode(
       data.google_container_cluster.primary.master_auth[0].cluster_ca_certificate
     )
-     client_certificate = base64decode(data.google_container_cluster.primary.master_auth.0.client_certificate)
-    client_key = base64decode(data.google_container_cluster.primary.master_auth.0.client_key)
+    client_certificate = base64decode(data.google_container_cluster.primary.master_auth.0.client_certificate)
+    client_key         = base64decode(data.google_container_cluster.primary.master_auth.0.client_key)
   }
 }
 
 module "postgresql" {
   source = "../../modules/postgresql"
 
-  db_name   = "postgresql"
+  db_name    = "postgresql"
   chart_name = "postgresql"
   namespace  = "transactions"
 
@@ -67,19 +67,20 @@ module "transaction-api" {
   app_name   = "transaction-api"
   chart_name = "transaction-api"
   namespace  = "transactions"
+  timeout    = 120
 
   depends_on = [module.postgresql]
 
 
   custom_values = {
-  env = [
+    env = [
       {
-        name = "DB_URL"
+        name = "DATABASE_URL"
         secretRef = {
           name = module.postgresql.secret_name
           key  = "postgres-url"
         }
       }
-  ]
+    ]
   }
 }

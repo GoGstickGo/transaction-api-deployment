@@ -1,7 +1,8 @@
 replicaCount: 3
 
 image:
-  repository: europe-west1-docker.pkg.dev/transaction-api-2446/transaction-api/transaction-api:0.0.1
+  repository: europe-west1-docker.pkg.dev/transaction-api-2446/transaction-api/transaction-api
+  tag: "v0.0.1"
   pullPolicy: Always
 
 service:
@@ -11,6 +12,23 @@ service:
 serviceAccount:
   create: true
   name: transaction-api
+
+#podSecurityContext:    
+  #runAsNonRoot: true
+  # runAsUser: 1000 missing UID/GUID in DockerImage line 14
+  # runAsGroup: 3000
+  # fsGroup: 2000
+  #seccompProfile:
+    #type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false # missing permission in DockerImage line 14
+  capabilities:
+    drop:
+      - ALL
+    add:
+      - NET_BIND_SERVICE  # Allow binding to ports < 1024
 
 resources:
   limits:

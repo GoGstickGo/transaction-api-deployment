@@ -14,6 +14,26 @@ service:
   type: ClusterIP
   port: 5432
 
+podSecurityContext:    
+  runAsNonRoot: true
+  runAsUser: 999      # postgres user
+  runAsGroup: 999     # postgres group
+  fsGroup: 999        # Files in volumes owned by postgres group
+  fsGroupChangePolicy: "OnRootMismatch"  # Only change ownership if needed
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+    add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
 
 # Persistence configuration
 persistence:
