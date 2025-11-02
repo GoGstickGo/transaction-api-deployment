@@ -160,7 +160,7 @@ resource "kubernetes_config_map" "slo_recording_rules" {
 # Outputs
 output "prometheus_url" {
   description = "Prometheus server URL"
-  value       = "http://prometheus-kube-prometheus-prometheus.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:9090"
+  value       = "http://prometheus-prometheus.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:9090"
 }
 
 output "grafana_url" {
@@ -170,5 +170,5 @@ output "grafana_url" {
 
 output "alertmanager_url" {
   description = "AlertManager URL"
-  value       = "http://prometheus-kube-prometheus-alertmanager.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:9093"
+  value       = "http://prometheus-alertmanager.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:9093"
 }
