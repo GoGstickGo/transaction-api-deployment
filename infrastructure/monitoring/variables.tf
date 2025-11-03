@@ -3,10 +3,6 @@ variable "environment" {
   default = "assesment"
 }
 
-variable "db_username" {
-  type = string
-}
-
 variable "grafana_admin_password" {
   type = string
 }
@@ -15,4 +11,8 @@ variable "grafana_admin_password" {
 variable "state_bucket" {
   type    = string
   default = "sre-assesment-state"
+}
+
+variable "app_namespace" {
+  type = string
 }
