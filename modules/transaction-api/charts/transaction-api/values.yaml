@@ -79,6 +79,19 @@ nodeSelector:
 
 affinity:
   podAntiAffinity:
+    # Prefer different zones (soft)
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - transaction-api
+        topologyKey: topology.kubernetes.io/zone
+    
+    # Require different nodes (hard)
     requiredDuringSchedulingIgnoredDuringExecution:
     - labelSelector:
         matchExpressions:
@@ -86,4 +99,4 @@ affinity:
           operator: In
           values:
           - transaction-api
-      topologyKey: topology.kubernetes.io/zone
+      topologyKey: kubernetes.io/hostname

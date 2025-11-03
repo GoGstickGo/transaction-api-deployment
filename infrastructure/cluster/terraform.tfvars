@@ -8,7 +8,7 @@ environment  = "assesment"
 machine_type    = "e2-small" # 2 vCPUs, 4 GB memory
 node_count      = 2
 min_node_count  = 1
-max_node_count  = 3
+max_node_count  = 5
 use_preemptible = true # Set to true for cost savings (nodes can be terminated)
 
 disk_size_gb = 50
