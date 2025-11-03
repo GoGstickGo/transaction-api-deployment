@@ -74,6 +74,9 @@ module "transaction-api" {
 
 
   custom_values = {
+    image = {
+      tag = "v0.0.2"
+    }
     env = [
       {
         name = "DATABASE_URL"
