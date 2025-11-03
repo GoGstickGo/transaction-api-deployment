@@ -70,5 +70,5 @@ module "monitoring" {
   # Set the password via TF_VAR_grafana_admin_password during runtime
   environment            = var.environment
   grafana_admin_password = var.grafana_admin_password
-  app_namespace          = "transactions"
+  app_namespace          = var.app_namespace
 }
