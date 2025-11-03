@@ -12,3 +12,7 @@
 - load testing with [k6](https://k6.io/)
 - test alerting / chaos testing with [krkn](https://krkn-chaos.github.io/krkn/)
 - terrafom/helm testing with [terratest](https://terratest.gruntwork.io/)
+
+# CI/CD
+
+- move the whole deployment process to Github Actions 
